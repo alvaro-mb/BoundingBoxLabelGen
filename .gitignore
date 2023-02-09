@@ -4,3 +4,7 @@ back_up/
 Kitti/
 PanoramicViews/
 RosbagOMNI/
+__pycache__/
+LidarImages/
+.idea/
+broza.py
