@@ -5,12 +5,12 @@ from src.labeler import labeler
 from src.json_writters import *
 
 
-if __name__ == "main":
+if __name__ == "__main__":
     # Read images and point clouds from the dataset
     DATA_PATH = "path"
     POINTCLOUD_PATH = DATA_PATH + "/pcd"
     IMAGES_PATH = DATA_PATH + "/images"
-    pcls = sorted(glob(os.path.join(POINTCLOUD_PATH, "*.png")), key=os.path.getmtime)
+    pcls = sorted(glob(os.path.join(POINTCLOUD_PATH, "*.pcd")), key=os.path.getmtime)
     imgs = sorted(glob(os.path.join(IMAGES_PATH, "*.png")), key=os.path.getmtime)
 
     assert imgs.__len__ == pcls.__len__, "There should be the same number of images and point clouds."

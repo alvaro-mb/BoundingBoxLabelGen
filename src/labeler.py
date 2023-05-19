@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 
-from src.pointcloud_utils import load_pc_from_pcd, PointCloud
+from src.pointcloud_utils import load_pc, PointCloud
 from src.bbox_utils import BoundingBox
 from src.json_writters import hex_gen, dec_gen
 
@@ -21,16 +21,17 @@ def labeler(pointclouds, images, supervisely = None):
     # Yolov5 model from pytorch
     model = torch.hub.load('ultralytics/yolov5', 'yolov5x', pretrained=True)
 
-    panorama_fov = np.deg2rad(120)
+    v_fov = np.deg2rad(120)
+    h_fov = np.deg2rad(360)
     key_id = [hex_gen, hex_gen, dec_gen(7), dec_gen(9)]
     dslabel = []
 
     for img, pcl in zip(images, pointclouds):
-        points = load_pc_from_pcd(pcl)  # Load point cloud
+        points = load_pc(pcl)  # Load point cloud
         pcl = PointCloud(points, img)  # Load points and image using PointCloud class
 
         # Transform 2D LiDAR coordinates to 2D images pixel coordinates
-        pcl.lidar_image_coordinates(panorama_fov, 'spherical')
+        pcl.lidar_image_coordinates(v_fov, h_fov, 'spherical')
 
         # Extracts 2D labels from Yolov5 using the loaded image
         image_labels = model(img)  # Yolov5 inference

@@ -108,7 +108,6 @@ class BoundingBox:
 
     def bounding_base(self, rotations):
         """ Get the bounding base with minimum error. The base with minimum mse that bounds the 2D perimeter points.
-            :param: perimeter: Perimeter points in polar coordinates
             :param: rotations: Number of orientations in which 90º is divided
 
             :return: Base object with the [length, width], yaw, centroid [x,y] and fixed corner [x,y] from the base
@@ -160,7 +159,7 @@ class BoundingBox:
         """ Extracts the perimeter points of the labeled points projections in the x-y plane. """
         points = self.car2pol(self.labeled_points)
         i = np.argsort(points[1])
-        points = points[i]  # Sort points by angle
+        points = points[i]  # Sorted points by angle
         phi, rho = points[0][0], points[0][1]
         perimeter = []
         for point in points:
@@ -191,8 +190,8 @@ class BoundingBox:
             for pol_point, car_point in zip(self.perimeter, car_perimeter):
                 # Missing coordinate from the intersection between corner's lines and
                 # the line which goes through origin and the point
-                x = corner[1] * np.tan(pol_point[1])
-                y = corner[0] / np.tan(pol_point[0])
+                x = corner[1] / np.tan(pol_point[1])
+                y = corner[0] * np.tan(pol_point[0])
                 # Distances between point and intersection
                 dist1 = np.sqrt((car_point[0] - x) ** 2 + (car_point[1] - corner[1]) ** 2)
                 dist2 = np.sqrt((car_point[1] - corner[0]) ** 2 + (car_point[0] - y) ** 2)
@@ -201,6 +200,7 @@ class BoundingBox:
             ers = np.array(errors) ** 2  # Squared errors
             mse.append(ers.mean())  # MSE
             self.perimeter[1] = self.perimeter[1] + (np.pi / 2) / r  # New yaw
+
         return mse
 
     @staticmethod
