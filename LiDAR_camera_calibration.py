@@ -17,6 +17,9 @@ from src.image_utils import CamModel, Image
 
 
 # Paths
+# PATH = "/home/arvc/PointCloud/LiDARCameraCalibration/robot2/"
+# IMAGES_PATH = PATH + "camera/data/"
+# POINTCLOUD_PATH = PATH + "lidar/data/"
 PATH = "/home/arvc/PointCloud/LiDARCameraCalibration/experiment/"
 IMAGES_PATH = PATH + "images/"
 POINTCLOUD_PATH = PATH + "pointclouds/"
@@ -25,71 +28,6 @@ imgs = sorted(glob(os.path.join(IMAGES_PATH, "*.png")), key=os.path.getmtime)
 pcls = sorted(glob(os.path.join(POINTCLOUD_PATH, "*.ply")), key=os.path.getmtime)
 model_file = "/home/arvc/PointCloud/LiDARCameraCalibration/calib_results.txt"
 d_range = (0, 80)
-
-
-class SelectFromCollection:
-    """ Select indices from a matplotlib collection using `LassoSelector`.
-
-    Selected indices are saved in the `ind` attribute. This tool fades out the
-    points that are not part of the selection (i.e., reduces their alpha
-    values). If your collection has alpha < 1, this tool will permanently
-    alter the alpha values.
-
-    Note that this tool selects collection objects based on their *origins*
-    (i.e., `offsets`).
-
-    Parameters
-    ----------
-    ax : :class:`~matplotlib.axes.Axes`
-        Axes to interact with.
-
-    collection : :class:`matplotlib.collections.Collection` subclass
-        Collection you want to select from.
-
-    alpha_other : 0 <= float <= 1
-        To highlight a selection, this tool sets all selected points to an
-        alpha value of 1 and non-selected points to `alpha_other`.
-    """
-
-    def __init__(self, ax, collection, alpha_other=0.3):
-        self.canvas = ax.figure.canvas
-        self.collection = collection
-        self.alpha_other = alpha_other
-
-        self.xys = collection.get_offsets()
-        self.Npts = len(self.xys)
-
-        # Ensure that we have separate colors for each object
-        self.fc = collection.get_facecolors()
-        if len(self.fc) == 0:
-            raise ValueError('Collection must have a facecolor')
-        elif len(self.fc) == 1:
-            self.fc = np.tile(self.fc, (self.Npts, 1))
-
-        self.lasso = LassoSelector(ax, onselect=self.onselect)
-        self.ind = []
-
-    def onselect(self, verts):
-        path = Path(verts)
-        self.ind = np.nonzero(path.contains_points(self.xys))[0]
-        self.fc[:, -1] = self.alpha_other
-        self.fc[self.ind, -1] = 1
-        self.collection.set_facecolors(self.fc)
-        self.canvas.draw_idle()
-
-    def disconnect(self):
-        self.lasso.disconnect_events()
-        self.fc[:, -1] = 1
-        self.collection.set_facecolors(self.fc)
-        self.canvas.draw_idle()
-
-def accept(event):
-    if event.key == "enter":
-        # print("Selected points:")
-        # print(selector.xys[selector.ind])
-        selector.disconnect()
-        # ax.set_title("")
-        fig.canvas.draw()
 
 
 def get_plane_points(points, i, radius):
@@ -338,7 +276,7 @@ def get_corners(points, image, camera_model, plane, lidar_plane = 0):
 
     # Plot equirectangular image and point cloud
     vis = Visualizer(points, image)
-    vis.reflectivity_filter(0.25)
+    vis.reflectivity_filter(0.2)
     vis.get_spherical_coord(lidar2camera=0)
     vis.encode_values(d_range=d_range)
     equirect_lidar = Image(image=image, cam_model=camera_model, points_values=vis.pixel_values)
@@ -356,13 +294,7 @@ def get_corners(points, image, camera_model, plane, lidar_plane = 0):
                                   (equirect_lidar.eqr_coord[0] < plane_point[0] + pixel_window ) &
                                   (equirect_lidar.eqr_coord[1] > plane_point[1] - pixel_window ) &
                                   (equirect_lidar.eqr_coord[1] < plane_point[1] + pixel_window ))[0]
-
-    # selector = SelectFromCollection(ax, pts)
-    # fig.canvas.mpl_connect("key_press_event", accept)
-    # ax.set_title("Select some plane points. Press enter to accept selected points.")
-    # ax.axis('equal')
-    # plt.show()
-    # plane_index_points = selector.ind
+    plt.close(fig)
 
     # Find plane points from an initial seed
     plane_points = get_plane_points(vis.lidar3d, plane_index_points, radius=0.04)
@@ -447,21 +379,21 @@ def get_rotation_and_translation(camera_corners3d, lidar_corners3d, pointcloud, 
     """
 
     # Estimate transform matrix between corners
-    print('\n3D camera corners coordinates: \n', camera_corners3d,
-          '\n\n 3D lidar corners coordinates: \n', lidar_corners3d)
+    # print('\n3D camera corners coordinates: \n', camera_corners3d,
+    #       '\n\n 3D lidar corners coordinates: \n', lidar_corners3d)
     pointcloud.estimate_transform_matrix(camera_corners3d, lidar_corners3d)
     print('\nTransformation matrix: \n', pointcloud.transform_matrix)
     # print lidar_corners3d transformed to camera reference system
     lidar_corners3d_transformed = np.matmul(pointcloud.transform_matrix, np.vstack((lidar_corners3d.T, np.ones((1, lidar_corners3d.shape[0]))))).T[:, :3]
-    print('\nLidar corners coordinates transformed to camera reference system: \n', lidar_corners3d_transformed)
+    # print('\nLidar corners coordinates transformed to camera reference system: \n', lidar_corners3d_transformed)
     # Get error between transformed lidar corners and camera corners
     err = np.linalg.norm(lidar_corners3d_transformed - camera_corners3d, axis=1)
     mean_err = np.mean(err)
     std_err = np.std(err)
 
     euler = R.from_matrix(pointcloud.transform_matrix[:3, :3]).as_euler('xyz', degrees=True)
-    print('\nEuler angles from rotation matrix in degrees: \n', euler)
-    print('\nTranslation vector in meters: \n', pointcloud.transform_matrix[:3, 3])
+    # print('\nEuler angles from rotation matrix in degrees: \n', euler)
+    # print('\nTranslation vector in meters: \n', pointcloud.transform_matrix[:3, 3])
 
     # assert that camera model is not None if show is not 0
     assert (show == 0) or (camera_model is not None), "Camera model is None"
@@ -497,22 +429,15 @@ if __name__ == "__main__":
 
         # Read image and pointcloud
         image = mpimg.imread(i)
-        # image = cv2.medianBlur(image, 5)
-        # image = cv2.bilateralFilter(image, 4, 75, 75)
-        # plt.imshow(image)
-        # file_name = os.path.basename(i)
-        # img_timestamp = int(file_name.split(".")[0])
-        # pcl_timestamp = str(int((img_timestamp - 2500000000) / 100000000))  # 2.5 delay
-        # pointcloud = glob(os.path.join(POINTCLOUD_PATH, pcl_timestamp + "*.ply"))
         points = load_pc(p)
 
         # Get corners coordinates twice, one for each plane to get more points from the 3D space
-        camera_corners1, lidar_corners1, pc1 = get_corners(points, image, cam_model, big_plane, lidar_plane=1)
-        camera_corners2, lidar_corners2, pc2 = get_corners(points, image, cam_model, small_plane, lidar_plane=1)
+        camera_corners1, lidar_corners1, pc1 = get_corners(points, image, cam_model, big_plane, lidar_plane=0)
+        camera_corners2, lidar_corners2, pc2 = get_corners(points, image, cam_model, small_plane, lidar_plane=0)
         camera_corners = np.vstack((camera_corners1, camera_corners2))
         lidar_corners = np.vstack((lidar_corners1, lidar_corners2))
 
-        rotation, translation, mean_error, std_error = get_rotation_and_translation(camera_corners, lidar_corners, pc1, show=2, camera_model=cam_model)
+        rotation, translation, mean_error, std_error = get_rotation_and_translation(camera_corners, lidar_corners, pc1, show=0, camera_model=cam_model)
         kabsch_errors.append(mean_error)
         kabsch_std.append(std_error)
 
@@ -520,6 +445,10 @@ if __name__ == "__main__":
         translations.append(translation)
 
     kabsch_mean = np.mean(kabsch_errors)
+
+    # Print kabsch errors and standard deviation
+    print('\nMean Kabsch error: ', kabsch_errors)
+    print('\nKabsch error standard deviation: ', kabsch_std)
 
     # Plot kabsch errors with standard deviation bars and a line for the mean
     plt.figure()
@@ -529,6 +458,7 @@ if __name__ == "__main__":
     plt.ylabel('Error (m)')
     plt.title('Kabsch error')
     plt.legend()
+    plt.show()
 
     # Get the mean of the rotations and translations
     rotations = np.array(rotations)
@@ -537,41 +467,51 @@ if __name__ == "__main__":
     mean_translation = np.mean(translations, axis=0)
 
     # Get the error of the rotations and translations
-    rotations_error = rotations - np.ones(len(rotations)) * mean_rotation
-    translations_error = translations - np.ones(len(translations)) * mean_translation
-    np.std(rotations, axis=0)
-    np.std(translations, axis=0)
+    rotations_error = rotations - np.repeat(mean_rotation, rotations.shape[0], axis=0).reshape(rotations.shape[1], rotations.shape[0]).T
+    translations_error = translations - np.repeat(mean_translation, translations.shape[0], axis=0).reshape(rotations.shape[1], rotations.shape[0]).T
+
+    # Print rotations and translations errors
+    print("\nRotations: ", rotations)
+    print("\nTranslations: ", translations)
+    print("\nMean rotation: ", mean_rotation)
+    print("\nMean translation: ", mean_translation)
+    print('\nRotations errors: ', rotations_error)
+    print('\nTranslations errors: ', translations_error)
+    print("\nMean rotation error: ", np.std(rotations, axis=0))
+    print("\nMean translation error: ", np.std(translations, axis=0))
 
     # Get the mean of the error of the rotations and translations
-    mean_rotations_error = np.mean(rotations_error)
+    mean_rotations_error = np.mean(abs(rotations_error))
     mean_translation_error = np.mean(translations_error)
 
-    # Plot errors bars and a line for the mean
+    # Plot rotation errors bars
     plt.figure()
-    plt.bar(np.arange(len(rotations_error)), rotations_error, fmt='o', label='Rotation')
-    plt.plot(np.arange(len(rotations_error)), mean_rotation, label='Mean rotation')
+    plt.bar(np.arange(len(rotations_error)) - 0.3, abs(rotations_error[:, 0]), 0.3, label='Rotation error x axis')
+    plt.plot(np.arange(len(rotations_error)) - 0.3, np.ones(len(rotations_error)) * abs(mean_rotations_error[0]),
+             label='Mean rotation error x axis')
+    plt.bar(np.arange(len(rotations_error)), abs(rotations_error[:, 1]), 0.3, label='Rotation error y axis')
+    plt.plot(np.arange(len(rotations_error)), np.ones(len(rotations_error)) * abs(mean_rotations_error[1]),
+             label='Mean rotation error y axis')
+    plt.bar(np.arange(len(rotations_error)) + 0.3, abs(rotations_error[:, 2]), 0.3, label='Rotation error z axis')
+    plt.plot(np.arange(len(rotations_error)) + 0.3, np.ones(len(rotations_error)) * abs(mean_rotations_error[2]),
+             label='Mean rotation error z axis')
     plt.xlabel('Image number')
     plt.ylabel('Error (degrees)')
     plt.title('Rotation error')
     plt.legend()
+    plt.show()
+    # Plot translation errors bars
     plt.figure()
-    plt.bar(np.arange(len(translations_error)), translations_error, fmt='o', label='Translation')
-    plt.plot(np.arange(3), mean_translation, label='Mean translation')
+    plt.bar(np.arange(len(translations_error)), np.linalg.norm(translations_error, axis=1), label='Translation error')
+    plt.plot(np.arange(len(translations_error)),
+             np.ones(len(translations_error)) * np.linalg.norm(mean_translation_error), label='Mean translation error',
+             color='red')
     plt.xlabel('Image number')
-    plt.ylabel('Translation (m)')
+    plt.ylabel('Error (m)')
+    plt.title('Translation error')
     plt.legend()
     plt.show()
 
     # Print the results
-    print("Mean rotation: ", mean_rotation)
-    print("Mean translation: ", mean_translation)
-    print("Mean rotation error: ", mean_rotations_error)
-    print("Mean translation error: ", mean_translation_error)
-
-
-    # image = mpimg.imread(imgs[42])
-    # file_name = os.path.basename(imgs[42])
-    # img_timestamp = int(file_name.split(".")[0])
-    # pcl_timestamp = str(int((img_timestamp - 2500000000) / 100000000))  # 2.5 delay
-    # pointcloud = glob(os.path.join(POINTCLOUD_PATH, pcl_timestamp + "*.ply"))
-    # points = load_pc(pointcloud[0])
+    print("\nMean rotation error: ", mean_rotations_error)
+    print("\nMean translation error: ", mean_translation_error)

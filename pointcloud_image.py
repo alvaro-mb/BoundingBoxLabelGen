@@ -13,10 +13,11 @@ from src.image_utils import CamModel
 # home_DIR = "/home/arvc/PointCloud/LiDARCameraCalibration"
 # PCL_DIR = home_DIR + "/LiDAR/1677168911642341120.pcd"
 # image_DIR = home_DIR + "/fisheye/1677168911633312000.png"
-IMAGES_PATH = "/home/arvc/PointCloud/LiDARCameraCalibration/robot0/camera/data/"
-POINTCLOUD_PATH = "/home/arvc/PointCloud/LiDARCameraCalibration/robot0/lidar/data/"
+IMAGES_PATH = "/home/arvc/PointCloud/LiDARCameraCalibration/experiment/images"
+POINTCLOUD_PATH = "/home/arvc/PointCloud/LiDARCameraCalibration/experiment/pointclouds"
 
 imgs = sorted(glob(os.path.join(IMAGES_PATH, "*.png")), key=os.path.getmtime)
+pointcloud = sorted(glob(os.path.join(POINTCLOUD_PATH, "*.ply")), key=os.path.getmtime)
 
 model_file = "/home/arvc/PointCloud/LiDARCameraCalibration/calib_results.txt"
 
@@ -30,18 +31,20 @@ if not os.path.exists(dir_save):
 filename = 'Lidar_onto_camera.png'
 saveto = dir_save + '/' + filename
 
-image = mpimg.imread(imgs[15])
-file_name = os.path.basename(imgs[15])
-img_timestamp = int(file_name.split(".")[0])
-pcl_timestamp = str(int(np.round((img_timestamp - 2500000000) / 100000000))) # 2.5 delay
-pointcloud = glob(os.path.join(POINTCLOUD_PATH, pcl_timestamp + "*.ply"))
-points = load_pc(pointcloud[0])
+image = mpimg.imread(imgs[5])
+# file_name = os.path.basename(imgs[15])
+# img_timestamp = int(file_name.split(".")[0])
+# pcl_timestamp = str(int(np.round((img_timestamp - 2500000000) / 100000000))) # 2.5 delay
+# pointcloud = glob(os.path.join(POINTCLOUD_PATH, pcl_timestamp + "*.ply"))
+points = load_pc(pointcloud[5])
 
 camera_model = CamModel(model_file)
 pcl = Visualizer(points, image)  # , value='reflectivity')
 pcl.reflectivity_filter()
+pcl.define_transform_matrix()
+pcl.transform_lidar_to_camera()
 
-pcl.lidar_onto_image(camera_model, d_range=d_range)
+pcl.lidar_onto_image(camera_model, fisheye=1, d_range=d_range, saveto=saveto)
 
 # pcl.lidar_to_panorama(projection_type='spherical', d_range=d_range, saveto=saveto)
 

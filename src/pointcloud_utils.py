@@ -110,8 +110,10 @@ class PointCloud:
         """ Define transformation matrix manually. """
 
         # MATRIX EXTRACTED FROM LIDAR-CAMERA CALIBRATION PROCESS
-        t = [0, 0, 0]  # distances from camera to LiDAR
-        r = [0, np.deg2rad(0), np.deg2rad(0)]
+        # t = [0.07842228, -0.04997922, -0.26663281]  # distances from camera to LiDAR
+        t = [ 0.13883695, -0.0543241, -0.27825683]  # distances from camera to LiDAR
+        # r = [np.deg2rad(1.82945084) , np.deg2rad(-3.55761875), np.deg2rad(-1.2380633)]
+        r = [np.deg2rad(1.38220545) , np.deg2rad(- 2.24528872), np.deg2rad(- 0.98003899)]
         Rx = np.array([[1, 0, 0, 0],
                        [0, np.cos(r[0]), -np.sin(r[0]), 0],
                        [0, np.sin(r[0]), np.cos(r[0]), 0],
@@ -414,7 +416,7 @@ class Visualizer(PointCloud):
             lidar_fish.check_image_limits()
             plt.imshow(lidar_fish.image)
             u, v =  lidar_fish.spherical_proj[1], lidar_fish.spherical_proj[0]
-            plt.scatter(x=u, y=v, c=lidar_fish.points_values, s=0.05, cmap=self.cmap)
+            plt.scatter(x=u, y=v, c=lidar_fish.points_values, s=0.01, cmap=self.cmap)
 
             # Plot lidar and camera corners
             if self.lidar_corners is not None:
